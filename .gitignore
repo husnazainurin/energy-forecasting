@@ -216,3 +216,28 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Data & Large Files (GitHub 100MB limit)
+data/
+*.csv
+*.parquet
+*.xlsx
+*.db
+
+# ML Model Artifacts & Weights
+models/
+artifacts/
+*.pkl
+*.joblib
+*.pt
+*.onnx
+*.h5
+
+# Secrets & Local Virtual Environments
+.env
+venv/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.vscode/
+.DS_Store
