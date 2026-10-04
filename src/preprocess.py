@@ -1,7 +1,7 @@
 # Import relevant packages
 import pandas as pd
 
-def preprocess(df: pd.DataFrame) -> pd.DataFrame:
+def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
     # Convert date to datetime64 DataType
     df["date"] = pd.to_datetime(df["date"])
@@ -32,3 +32,13 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         # Mean Humidity
         rh_cols = [f"RH_{i}" for i in indices]
         df[f"RH_{name}"] = df[rh_cols].mean(axis=1)
+
+    # Drop old, unaggregated features
+    for i in range (9):
+        df = df.drop([f'T{i+1}',  f'RH_{i+1}'], axis = 1)
+
+    # Confirmation message
+    print('Preprocessing completed.')
+
+    # Return preprocessed dataset
+    return df
