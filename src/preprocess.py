@@ -1,12 +1,13 @@
 # Import relevant packages
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
-import os
 
-# Get parent address
-PARENT_ADDRESS = Path(os.getcwd()).parent
+def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
-# Import csv file
-energy = pd.read_csv(f'{PARENT_ADDRESS}/data/raw/energydata_complete.csv')
+    # Convert date to datetime64 DataType
+    df["date"] = pd.to_datetime(df["date"])
+
+    # Set date as index
+    df.set_index("date", inplace=True)
+
+    # Define features representing Chievres Airport
+    chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint']
