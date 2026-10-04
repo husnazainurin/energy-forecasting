@@ -11,3 +11,24 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
     # Define features representing Chievres Airport
     chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint']
+
+    # Drop columns
+    df = df.drop(chievres, axis = 1)
+
+    # Define grouping for aggregation
+    groups = {
+    "indoor": [1, 3, 4, 7, 8, 9],
+    "liv_room": [2],
+    "bathroom": [5],
+    "outdoor": [6],
+    }
+
+    # Perform aggregation using mean
+    for name, indices in groups.items():
+        # Mean Temperature
+        temp_cols = [f"T{i}" for i in indices]
+        df[f"T_{name}"] = df[temp_cols].mean(axis=1)
+
+        # Mean Humidity
+        rh_cols = [f"RH_{i}" for i in indices]
+        df[f"RH_{name}"] = df[rh_cols].mean(axis=1)
