@@ -3,6 +3,22 @@ import pandas as pd
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
+    '''
+    Dataset Name: UCI Appliances Energy Prediction
+    Dataset Source: https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction
+    ---
+
+    This method does the following preprocessing steps:
+    1. Convert 'date' column from string DataType to datetime64
+    2. Set 'date' as index
+    3. Drop columns representing Chievres Airport readings
+    4. Aggregate temperature and humidity features into similar groups
+    5. Drop unaggregated features
+
+    Justifications and EDA are documented in:
+    energy-forecasting/notebooks/01_data_preprocessing.ipynb
+    '''
+
     # Convert date to datetime64 DataType
     df["date"] = pd.to_datetime(df["date"])
 
