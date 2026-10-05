@@ -11,9 +11,10 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     This method does the following preprocessing steps:
     1. Convert 'date' column from string DataType to datetime64
     2. Set 'date' as index
-    3. Drop columns representing Chievres Airport readings
-    4. Aggregate temperature and humidity features into similar groups
-    5. Drop unaggregated features
+    3. Extract calendar feature (hour, month, day)
+    4. Drop columns representing Chievres Airport readings
+    5. Aggregate temperature and humidity features into similar groups
+    6. Drop unaggregated features
 
     Justifications and EDA are documented in:
     energy-forecasting/notebooks/01_data_preprocessing.ipynb
@@ -24,6 +25,11 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
     # Set date as index
     df.set_index("date", inplace=True)
+
+    # Extract calendar feature
+    df['hour'] = df.index.hour
+    df['month'] = df.index.month_name()
+    df['day'] = df.index.day_name()
 
     # Define features representing Chievres Airport
     chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint']
