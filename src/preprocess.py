@@ -1,5 +1,6 @@
 # Import relevant packages
 import pandas as pd
+import numpy as np
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -64,3 +65,44 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
     # Return preprocessed dataset
     return df
+
+
+def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+        Dataset Name: UCI Appliances Energy Prediction
+        Dataset Source: https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction
+        ---
+    
+        This method does the following feature engineering steps:
+        1. Keep 'hour' as a predictive feature for the model, but discard the 'day'
+        2. Downsample to 1 sample/30 min, aggregated by max
+        3. Create lagged variable for 30-120 minutes (after downsampling), as well as 1, 5 and 7 days
+        4. Keep light lagged variables short-term (30 - 60 minutes back)
+        5. Keep Only 90-120 minutes Lagging for Bathroom Humidity
+    
+        Justifications and EDA are documented in:
+        energy-forecasting/notebooks/02_eda.ipynb
+    '''
+
+    # Discard 'day'
+    df = df.drop('day', axis = 1)
+
+    # Downsample to 1 sample/30 min, aggregated by max
+    agg = {}
+
+    # If numeric, take max. Else, take the first row values
+    for col in df.columns:
+        if np.issubdtype(df[col].dtype, np.number):
+            agg[col] = "max"
+        else:
+            agg[col] = "last"   
+
+    df = df.resample("30min").agg(agg)
+
+    # # Create lagged variable: 30-120 minutes, and 1, 5, 7 days
+    # lag = [1, 2, 3, 4, 48, 240, 336]
+    # lag_lab = ['30min', '1h', '1h30min', '2h', '1d', '5d', '7d']
+
+    # for col in df.select_dtypes('number').columns:
+    #     for step, label in lag, lag_lab:
+    #         df[f'{col}_{label}'] = 
