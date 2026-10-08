@@ -123,3 +123,5 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
 
     # Drop resulting missing values caused by shifting
     df = df.dropna()
+
+    return df
