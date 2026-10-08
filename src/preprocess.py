@@ -1,6 +1,5 @@
 # Import relevant packages
 import pandas as pd
-import numpy as np
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -76,33 +75,51 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         This method does the following feature engineering steps:
         1. Keep 'hour' as a predictive feature for the model, but discard the 'day'
         2. Downsample to 1 sample/30 min, aggregated by max
-        3. Create lagged variable for 30-120 minutes (after downsampling), as well as 1, 5 and 7 days
-        4. Keep light lagged variables short-term (30 - 60 minutes back)
-        5. Keep Only 90-120 minutes Lagging for Bathroom Humidity
+        3. Create lagged appliances variable for 30-120 minutes (after downsampling), as well as 1, 5 and 7 days
+        4. Create short-term light lagged variables (30 - 60 minutes back)
+        5. Create 90-120 minutes Lagging for Bathroom Humidity
+        6. Drop resulting missing values caused by the shifting
     
         Justifications and EDA are documented in:
         energy-forecasting/notebooks/02_eda.ipynb
     '''
 
     # Discard 'day'
-    df = df.drop('day', axis = 1)
+    df = df.drop(columns = ['day'])
 
     # Downsample to 1 sample/30 min, aggregated by max
     agg = {}
+    numeric = df.select_dtypes('number').columns
 
     # If numeric, take max. Else, take the first row values
     for col in df.columns:
-        if np.issubdtype(df[col].dtype, np.number):
+        if col in numeric:
             agg[col] = "max"
         else:
             agg[col] = "last"   
 
     df = df.resample("30min").agg(agg)
 
-    # # Create lagged variable: 30-120 minutes, and 1, 5, 7 days
-    # lag = [1, 2, 3, 4, 48, 240, 336]
-    # lag_lab = ['30min', '1h', '1h30min', '2h', '1d', '5d', '7d']
+    # Create lagged variables: 30 min–2 h, and 1, 5, 7 days
+    lag = [1, 2, 3, 4, 48, 240, 336]
+    lag_lab = ['30min', '1h', '1h30min', '2h', '1d', '5d', '7d']
 
-    # for col in df.select_dtypes('number').columns:
-    #     for step, label in lag, lag_lab:
-    #         df[f'{col}_{label}'] = 
+    for step, label in zip(lag, lag_lab):
+        df[f'Appliances_{label}'] = df['Appliances'].shift(step)
+
+        # Create 30 - 60 minutes back light lagged variables 
+    lag = [1, 2]
+    lag_lab = ['30min', '1h']
+
+    for step, label in zip(lag, lag_lab):
+        df[f'lights_{label}'] = df['lights'].shift(step)
+
+    # Create 90-120 minutes lag for Bathroom Humidity
+    lag = [3, 4]
+    lag_lab = ['1h30min', '2h']
+
+    for step, label in zip(lag, lag_lab):
+        df[f'RH_bathroom_{label}'] = df['RH_bathroom'].shift(step)
+
+    # Drop resulting missing values caused by shifting
+    df = df.dropna()
