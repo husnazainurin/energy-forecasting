@@ -241,3 +241,6 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .DS_Store
+
+# Dev files used for testing (will be deleted right after)
+dev.*
