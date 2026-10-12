@@ -27,7 +27,7 @@ energy = feature_engineering(energy)
 X, y = arimax_preprocess(energy)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, shuffle=False
+    X, y, test_size=0.3, shuffle=False
 )
 
 # Start best hyperparameter search
