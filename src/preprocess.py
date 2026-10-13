@@ -1,5 +1,7 @@
 # Import relevant packages
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from statsmodels.tsa.deterministic import Fourier
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -125,3 +127,27 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna()
 
     return df
+
+
+def arimax_preprocess(df: pd.DataFrame):
+
+    X = df.drop(columns = ['Appliances'])
+    y = df['Appliances']
+    
+    # Initialize encoder
+    le = LabelEncoder()
+
+    # Encode month
+    X['month'] = le.fit_transform(X['month'])
+
+    # Convert returned numpy array into DataFrame (for compatibility)
+    X = pd.DataFrame(X)
+
+    # Apply Fourier transform
+    f = Fourier(period=48, order=3)
+    fourier_df = f.in_sample(y.index)
+
+    # Combine the Fourier terms with original data
+    X = pd.concat([X, fourier_df], axis=1)
+
+    return X, y
