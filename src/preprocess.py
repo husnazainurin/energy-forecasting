@@ -33,8 +33,8 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     df['month'] = df.index.month_name()
     df['day'] = df.index.day_name()
 
-    # Define features representing Chievres Airport
-    chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint']
+    # Define features representing Chievres Airport and random var
+    chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint', 'rv1', 'rv2']
 
     # Drop columns
     df = df.drop(chievres, axis = 1)

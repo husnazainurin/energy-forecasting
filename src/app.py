@@ -30,6 +30,7 @@ def load_data(name):
 
     # Fetch and return
     df = pd.read_csv(root_dir/"data"/'processed'/name)
+    df.set_index('date')
     return df
 
 if "current_index" not in st.session_state:
@@ -49,23 +50,37 @@ st.write('Simulated real-time energy forecasting using unseen UCI Appliances Ene
 
 speed = st.slider("Select playback speed (seconds per 10-minutes)", 1, 5, 2)
 
+horizon = st.slider('Select the forecast horizon (minutes):', 
+min_value= 30,
+max_value = 10080,
+step = 30)
+
 # Live sensor readings placeholder
 row_placeholder = st.empty()
 prediction_placeholder = st.empty()
 
+# Create history DataFrame
+history = pd.DataFrame()
 
 for i in range (st.session_state.current_index, len(test_set)):
+
+    # Save current iteration in-case loop interrupted
     st.session_state.current_index = i
-    row = test_set.iloc[i]
 
+    # Update history to include current row
+    row = pd.DataFrame(test_set.iloc[i])
+    history = pd.concat([history, row])
+
+    # Display current sensor reading
     row_placeholder.dataframe(row)
-    # # Preprocess incoming data
-    # row = preprocess_energy(row)
-    # row = feature_engineering(row)
-    # X, y = arimax_preprocess(row)
 
-    # # Make point-prediction
-    # prediction = model.predict(n_periods=len(y), X=X)
+    # Preprocess historical data with current reading
+    row = preprocess_energy(row)
+    row = feature_engineering(row)
+    X, y = arimax_preprocess(row)
+
+    # Make prediction
+    prediction = model.predict(n_periods=len(y), X=X)
 
     time.sleep(speed)
     row_placeholder.empty()
