@@ -2,6 +2,15 @@ import streamlit as st
 from pathlib import Path
 import joblib
 import pandas as pd
+import sys
+import time
+
+# Add the root directory (one level up from notebooks/) to Python's path
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.append(str(root_dir))
+
+from src.preprocess import preprocess_energy, feature_engineering, arimax_preprocess
 
 
 @st.cache_resource
@@ -9,8 +18,7 @@ def load_model():
     '''Method for fetching the saved .pkl model'''
 
     # Get saved model path
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent
-    MODEL_PATH = PROJECT_ROOT / "models" / "model.pkl"
+    MODEL_PATH = root_dir / "models" / "model.pkl"
 
     # Fetch and return model
     model = joblib.load(MODEL_PATH)
@@ -20,12 +28,13 @@ def load_model():
 def load_data(name):
     '''Method for fetching the test and calibration data'''
 
-    # Get saved csv file path
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
     # Fetch and return
-    df = pd.read_csv(PROJECT_ROOT/"data"/'processed'/name)
+    df = pd.read_csv(root_dir/"data"/'processed'/name)
     return df
+
+if "current_index" not in st.session_state:
+  st.session_state.current_index = 0
+
 
 # Load model using cache first
 model = load_model()
@@ -39,3 +48,26 @@ st.write('Simulated real-time energy forecasting using unseen UCI Appliances Ene
 
 
 speed = st.slider("Select playback speed (seconds per 10-minutes)", 1, 5, 2)
+
+# Live sensor readings placeholder
+row_placeholder = st.empty()
+prediction_placeholder = st.empty()
+
+
+for i in range (st.session_state.current_index, len(test_set)):
+    st.session_state.current_index = i
+    row = test_set.iloc[i]
+
+    row_placeholder.dataframe(row)
+    # # Preprocess incoming data
+    # row = preprocess_energy(row)
+    # row = feature_engineering(row)
+    # X, y = arimax_preprocess(row)
+
+    # # Make point-prediction
+    # prediction = model.predict(n_periods=len(y), X=X)
+
+    time.sleep(speed)
+    row_placeholder.empty()
+st.session_state.current_index = 0
+
