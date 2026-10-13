@@ -34,10 +34,10 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     df['day'] = df.index.day_name()
 
     # Define features representing Chievres Airport and random var
-    chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint', 'rv1', 'rv2']
+    drop = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint', 'rv1', 'rv2']
 
     # Drop columns
-    df = df.drop(chievres, axis = 1)
+    df = df.drop(drop, axis = 1)
 
     # Define grouping for aggregation
     groups = {

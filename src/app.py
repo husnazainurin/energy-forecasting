@@ -12,6 +12,9 @@ if str(root_dir) not in sys.path:
 
 from src.preprocess import preprocess_energy, feature_engineering, arimax_preprocess
 
+if 'current_index' not in st.session_state:
+    st.session_state.current_index = 0
+
 
 @st.cache_resource
 def load_model():
@@ -50,14 +53,9 @@ st.write('Simulated real-time energy forecasting using unseen UCI Appliances Ene
 
 speed = st.slider("Select playback speed (seconds per 10-minutes)", 1, 5, 2)
 
-horizon = st.slider('Select the forecast horizon (minutes):', 
-min_value= 30,
-max_value = 10080,
-step = 30)
 
 # Live sensor readings placeholder
 row_placeholder = st.empty()
-prediction_placeholder = st.empty()
 
 # Create history DataFrame
 history = pd.DataFrame()
@@ -68,19 +66,26 @@ for i in range (st.session_state.current_index, len(test_set)):
     st.session_state.current_index = i
 
     # Update history to include current row
-    row = pd.DataFrame(test_set.iloc[i])
+    row = test_set.iloc[[i]]
     history = pd.concat([history, row])
+    history = history.set_index('date')
+    st.session_state.current_index = i
 
     # Display current sensor reading
     row_placeholder.dataframe(row)
 
-    # Preprocess historical data with current reading
-    row = preprocess_energy(row)
-    row = feature_engineering(row)
-    X, y = arimax_preprocess(row)
+    # Get forecast of next 30 minutes sensor reading (this should come from external API)
+    sensor_forecast = test_set.iloc[[i+1]]
+    sensor_forecast = sensor_forecast.set_index('date')
+    sensor_forecast, irr = arimax_preprocess(sensor_forecast)
 
-    # Make prediction
-    prediction = model.predict(n_periods=len(y), X=X)
+
+    # Preprocess historical data with current reading
+    X, y = arimax_preprocess(history)
+
+
+    # Make point prediction
+    prediction = model.predict(n_periods=1, X=sensor_forecast)
 
     time.sleep(speed)
     row_placeholder.empty()
