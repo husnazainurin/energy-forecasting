@@ -27,7 +27,6 @@ def load_model():
     model = joblib.load(MODEL_PATH)
     return model
 
-@st.cache_resource
 def load_data(name):
     '''Method for fetching the test and calibration data'''
 
@@ -47,6 +46,7 @@ model = load_model()
 test_set = load_data('test_set.csv')
 cal_set = load_data('cal_set.csv')
 
+
 st.title("⚡Live Energy Forecasting Demo")
 st.write('Simulated real-time energy forecasting using unseen UCI Appliances Energy dataset observations.')
 
@@ -61,34 +61,37 @@ row_placeholder = st.empty()
 label_prediction_placeholder = st.empty()
 prediction_placeholder = st.empty()
 
-# Create history DataFrame
-history = pd.DataFrame()
+# Create history DataFrame and append calibration data
+history = cal_set.copy()
+sensor_forecast = cal_set.copy()
 
 for i in range (st.session_state.current_index, len(test_set)):
 
     # Save current iteration in-case loop interrupted
     st.session_state.current_index = i
 
-    # Update history to include current row
-    row = test_set.iloc[[i]]
-    history = pd.concat([history, row])
-    history = history.set_index('date')
-    st.session_state.current_index = i
+    # Calculate forecast horizon step
+    period = int(horizon/30)
+
+    # Append current row to history
+    history = pd.concat([history, test_set.iloc[[i]]]).reset_index(drop = True)
+    
+
+    # Get forecast of sensor reading across horizon (this should come from external API)
+    sensor_forecast = pd.concat([cal_set, test_set.iloc[0:period]]).reset_index(drop = True)
 
     # Display current sensor reading
     label_sensor_placeholder.write('Current Sensor Readings: ')
-    row_placeholder.dataframe(row)
+    row_placeholder.dataframe(history.iloc[-1])
 
-    # Get forecast of next 30 minutes sensor reading (this should come from external API)
-    period = int(horizon/30)
-    sensor_forecast = test_set.iloc[(i+1) : (i + 1 + period)]
-    sensor_forecast = sensor_forecast.set_index('date')
-    sensor_forecast, irr = arimax_preprocess(sensor_forecast)
-
-
-    # Preprocess historical data with current reading
+    # Preprocess both history and future sensor reading
+    history = preprocess_energy(history)
+    history = feature_engineering(history)
     X, y = arimax_preprocess(history)
 
+    sensor_forecast = preprocess_energy(sensor_forecast)
+    sensor_forecast = feature_engineering(sensor_forecast)
+    sensor_forecast, irr = arimax_preprocess(sensor_forecast)
 
     # Make prediction across horizon
     prediction = model.predict(n_periods=period, X=sensor_forecast)

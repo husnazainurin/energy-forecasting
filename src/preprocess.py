@@ -22,6 +22,8 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     energy-forecasting/notebooks/01_data_preprocessing.ipynb
     '''
 
+    df = df.copy()
+
     # Convert date to datetime64 DataType
     df["date"] = pd.to_datetime(df["date"])
 
@@ -86,6 +88,8 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         energy-forecasting/notebooks/02_eda.ipynb
     '''
 
+    df = df.copy()
+
     # Discard 'day'
     df = df.drop(columns = ['day'])
 
@@ -130,6 +134,8 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def arimax_preprocess(df: pd.DataFrame):
+
+    df = df.copy()
 
     X = df.drop(columns = ['Appliances'])
     y = df['Appliances']
