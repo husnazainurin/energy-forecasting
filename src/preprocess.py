@@ -1,6 +1,6 @@
 # Import relevant packages
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+import joblib
 from statsmodels.tsa.deterministic import Fourier
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
@@ -22,6 +22,8 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     energy-forecasting/notebooks/01_data_preprocessing.ipynb
     '''
 
+    df = df.copy()
+
     # Convert date to datetime64 DataType
     df["date"] = pd.to_datetime(df["date"])
 
@@ -33,11 +35,11 @@ def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
     df['month'] = df.index.month_name()
     df['day'] = df.index.day_name()
 
-    # Define features representing Chievres Airport
-    chievres = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint']
+    # Define features representing Chievres Airport and random var
+    drop = ['T_out','Press_mm_hg','RH_out','Windspeed','Visibility','Tdewpoint', 'rv1', 'rv2']
 
     # Drop columns
-    df = df.drop(chievres, axis = 1)
+    df = df.drop(drop, axis = 1)
 
     # Define grouping for aggregation
     groups = {
@@ -86,6 +88,8 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         energy-forecasting/notebooks/02_eda.ipynb
     '''
 
+    df = df.copy()
+
     # Discard 'day'
     df = df.drop(columns = ['day'])
 
@@ -129,16 +133,15 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def arimax_preprocess(df: pd.DataFrame):
+def arimax_preprocess(df: pd.DataFrame, encoder):
+
+    df = df.copy()
 
     X = df.drop(columns = ['Appliances'])
     y = df['Appliances']
-    
-    # Initialize encoder
-    le = LabelEncoder()
 
     # Encode month
-    X['month'] = le.fit_transform(X['month'])
+    X['month'] = encoder.transform(X['month'])
 
     # Convert returned numpy array into DataFrame (for compatibility)
     X = pd.DataFrame(X)
