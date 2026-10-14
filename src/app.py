@@ -55,19 +55,22 @@ st.write('Simulated real-time energy forecasting using unseen UCI Appliances Ene
 
 speed = st.slider("Select playback speed (seconds per 10-minutes)", 1, 5, 2)
 horizon = st.slider("Select forecast horizon (minutes): ", min_value=30, max_value=120, step = 30)
-
+st.write('Current Time: ')
 
 # Live sensor readings placeholder
+today_placeholder = st.empty()
 label_sensor_placeholder = st.empty()
 row_placeholder = st.empty()
 label_prediction_placeholder = st.empty()
 prediction_placeholder = st.empty()
+
 
 # Create history DataFrame and append calibration data
 history_raw = cal_set.copy()
 sensor_forecast = cal_set.copy()
 
 for i in range (st.session_state.current_index, len(test_set)):
+
 
     # Save current iteration in-case loop interrupted
     st.session_state.current_index = i
@@ -77,6 +80,9 @@ for i in range (st.session_state.current_index, len(test_set)):
 
     # Append current row to history
     history_raw = pd.concat([history_raw, test_set.iloc[[i]]])
+
+    # Print current time
+    today_placeholder.write(history_raw['date'].iloc[i])
     
     # Get forecast of sensor reading across horizon (this should come from external API)
     sensor_forecast = pd.concat([history_raw,test_set.iloc[i+1:i+1+period]])
@@ -109,6 +115,7 @@ for i in range (st.session_state.current_index, len(test_set)):
     prediction_placeholder.empty()
     label_prediction_placeholder.empty()
     label_sensor_placeholder.empty()
+    today_placeholder.empty()
 
 st.session_state.current_index = 0
 
