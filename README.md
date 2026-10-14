@@ -23,7 +23,7 @@ Dataset Used: [UCI Appliances Energy Prediction](https://archive.ics.uci.edu/dat
 ## Summary of Achievements
 Here, I summarized the achievements I accomplished in several data science processes throughout the pipeline.
 
-I only include the achievements here. For my thought process and justifications for these decisions, refer the <a href = 'notebooks'>notebooks</a> folder.
+I only include the achievements here. For my thought process and justifications for these decisions, refer the <a href = 'notebooks'>notebooks</a> folder, or click on the data science process you'd like to view.
 <table>
     <thead>
         <tr>
@@ -34,7 +34,7 @@ I only include the achievements here. For my thought process and justifications 
     </thead>
     <tbody>
         <tr>
-            <td>Data Wrangling</td>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/01_data_preprocessing.ipynb'>Data Wrangling</a></td>
             <td>
                 pandas<br></td>
             <td>
@@ -44,7 +44,7 @@ I only include the achievements here. For my thought process and justifications 
             </td>
         </tr>
         <tr>
-            <td>Data Preprocessing</td>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/01_data_preprocessing.ipynb'>Data Preprocessing</a></td>
             <td>pandas</td>
             <td>
               1. No outlier handling done.<br><br>
@@ -52,7 +52,7 @@ I only include the achievements here. For my thought process and justifications 
             </td>
         </tr>
         <tr>
-            <td>Exploratory Data Analysis (EDA)</td>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/02_eda.ipynb'>Exploratory Data Analysis (EDA)</a></td>
             <td>pandas, numpy, matplotlib, seaborn, statsmodel</td>
             <td>
                 I've discovered these findings in the EDA process: <br><br>
@@ -65,7 +65,7 @@ I only include the achievements here. For my thought process and justifications 
             </td>
         </tr>
         <tr>
-            <td>Feature Engineering</td>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/02_eda.ipynb'>Feature Engineering</a></td>
             <td>pandas</td>
             <td>
                 Based on EDA findings, I performed these feature engineering steps:<br><br>
@@ -78,7 +78,7 @@ I only include the achievements here. For my thought process and justifications 
             </td>
         </tr>
         <tr>
-            <td>Modelling</td>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/03_model_eda.ipynb'>Modelling</a></td>
             <td>
                 scikit-learn, xgboost, optuna, pmdarima, statsmodel
             </td>
@@ -95,7 +95,17 @@ I only include the achievements here. For my thought process and justifications 
 
 
 ## Deployment <a id = 'deploy'></a>
-I'm still working on this part. Expected completion is October 2026.
+If you just want to view it without any setup, use [Live Streamlit App Deployment](#live).
+
+If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
+
+Or if you want neither, check out [this awesome demo video](#video) I made.
+
+### Live Streamlit App Deployment <a id = 'live'></a>
+
+### Local Deployment <a id = 'local'></a>
+
+### Demo Video <a id = 'video'></a>
 
 ## Future Update
 Currently, I only compared XGBoost Regressor and ARIMAX model. I do plan on including neural network model (specifically CNN) for the comparison and will replace the ARIMAX model if it perform better.
