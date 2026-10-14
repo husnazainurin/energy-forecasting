@@ -22,17 +22,19 @@ def load_model():
 
     # Get saved model path
     MODEL_PATH = root_dir / "models" / "model.pkl"
+    ENCODER_PATH = root_dir / "models" / "encoder.pkl"
 
     # Fetch and return model
     model = joblib.load(MODEL_PATH)
-    return model
+    encoder = joblib.load(ENCODER_PATH)
+
+    return model, encoder
 
 def load_data(name):
     '''Method for fetching the test and calibration data'''
 
     # Fetch and return
     df = pd.read_csv(root_dir/"data"/'processed'/name)
-    df.set_index('date')
     return df
 
 if "current_index" not in st.session_state:
@@ -40,7 +42,7 @@ if "current_index" not in st.session_state:
 
 
 # Load model using cache first
-model = load_model()
+model, encoder = load_model()
 
 # Load test and calibration set
 test_set = load_data('test_set.csv')
@@ -62,7 +64,7 @@ label_prediction_placeholder = st.empty()
 prediction_placeholder = st.empty()
 
 # Create history DataFrame and append calibration data
-history = cal_set.copy()
+history_raw = cal_set.copy()
 sensor_forecast = cal_set.copy()
 
 for i in range (st.session_state.current_index, len(test_set)):
@@ -74,33 +76,35 @@ for i in range (st.session_state.current_index, len(test_set)):
     period = int(horizon/30)
 
     # Append current row to history
-    history = pd.concat([history, test_set.iloc[[i]]]).reset_index(drop = True)
+    history_raw = pd.concat([history_raw, test_set.iloc[[i]]])
     
-
     # Get forecast of sensor reading across horizon (this should come from external API)
-    sensor_forecast = pd.concat([cal_set, test_set.iloc[0:period]]).reset_index(drop = True)
+    sensor_forecast = pd.concat([history_raw,test_set.iloc[i+1:i+1+period]])
 
     # Display current sensor reading
     label_sensor_placeholder.write('Current Sensor Readings: ')
-    row_placeholder.dataframe(history.iloc[-1])
+    row_placeholder.dataframe(history_raw.iloc[-1])
 
     # Preprocess both history and future sensor reading
-    history = preprocess_energy(history)
+    history = preprocess_energy(history_raw)
     history = feature_engineering(history)
-    X, y = arimax_preprocess(history)
 
     sensor_forecast = preprocess_energy(sensor_forecast)
     sensor_forecast = feature_engineering(sensor_forecast)
-    sensor_forecast, irr = arimax_preprocess(sensor_forecast)
+    sensor_forecast, irr = arimax_preprocess(sensor_forecast, encoder)
+
+    api_processed = sensor_forecast.tail(period)
 
     # Make prediction across horizon
-    prediction = model.predict(n_periods=period, X=sensor_forecast)
+    prediction = model.predict(n_periods=period, X=api_processed)
 
     # Display point prediction across horizon
     label_prediction_placeholder.write('Prediction:')
+    
     prediction_placeholder.dataframe(prediction)
 
     time.sleep(speed)
+    
     row_placeholder.empty()
     prediction_placeholder.empty()
     label_prediction_placeholder.empty()

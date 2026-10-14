@@ -1,6 +1,6 @@
 # Import relevant packages
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+import joblib
 from statsmodels.tsa.deterministic import Fourier
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
@@ -133,18 +133,15 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def arimax_preprocess(df: pd.DataFrame):
+def arimax_preprocess(df: pd.DataFrame, encoder):
 
     df = df.copy()
 
     X = df.drop(columns = ['Appliances'])
     y = df['Appliances']
-    
-    # Initialize encoder
-    le = LabelEncoder()
 
     # Encode month
-    X['month'] = le.fit_transform(X['month'])
+    X['month'] = encoder.transform(X['month'])
 
     # Convert returned numpy array into DataFrame (for compatibility)
     X = pd.DataFrame(X)
