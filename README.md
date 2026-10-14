@@ -1,6 +1,6 @@
 <img width=100% src="https://capsule-render.vercel.app/api?type=waving&color=f5b042&height=120&section=header" alt="header"/> 
 <h1 align="center">⚡Energy Consumption Time-Series Forecasting With Conformal Prediction</h1>
-<h4 align="center">Status: <i>Ongoing</i></h4>
+<h4 align="center">Status: <i>Deployment Ongoing</i></h4>
 <h4 align="center">Expected Completion: <i>October 2026</i></h4>
 <hr>
 
@@ -12,11 +12,12 @@
 * [Summary of Achievements](#summary-of-achievements)
 * [Deployment](#deploy)
 * [Future Update](#future-update)
+* [Connect with the Author](#connect)
 
 ---
 
 ## About this Project
-Predicting energy demand have been a crucial part of grid planning, which ensure that electricity supply are reliable while maintaining a minimum cost. This project applies a time-series analysis to forecast electricity consumption using historical records and sensor reading. 
+Predicting energy demand have been a crucial part of grid planning, which ensure that electricity supply are reliable while maintaining a minimum cost. This project applies a time-series analysis to forecast electricity consumption using historical records and forecasted sensor reading (from external API). 
 
 Dataset Used: [UCI Appliances Energy Prediction](https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction)
 
@@ -89,26 +90,87 @@ I only include the achievements here. For my thought process and justifications 
                 <b>Results: </b> ARIMAX performs better with RMSE of ~94.5 Wh<br><br>
             </td>
         </tr>
+        <tr>
+            <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/04_conformal_prediction_analysis.ipynb'>Conformal Prediction</a></td>
+            <td>
+                adaptive-conformal-inference
+            </td>
+            <td>
+                1. Applied and test adaptive conformal prediction on the selected model.<br><br>
+                2. Create a wrapper method for the dashboard implementation.
+            </td>
+        </tr>
+        <tr>
+            <td><a href = https://github.com/husnazainurin/energy-forecasting/blob/main/src/app.py>Deployment</a></td>
+            <td>streamlit</td>
+            <td>
+                Deployed the model in streamlit, which demonstrate the model forecasting in 2017 using sensor forecast from an external API. Using a slider, the user can adjust:<br><br>
+                1. Forecast horizon: how far into the future they'd like to predict<br><br>
+                2. Demo speed: how fast the demo iterate through the test set<br><br>
+                And the dashboard will display:<br><br>
+               1. Current time: current time, based on the current row being iterated in the test set<br><br>
+               2. Current sensor reading: sensor reading fetch from live sensor<br><br>
+               3. Predicted value: electrical consumption predicted at forecast horizon
+            </td>
+        </tr>
     </tbody>
 </table>
 
 
 
 ## Deployment <a id = 'deploy'></a>
-If you just want to view it without any setup, use [Live Streamlit App Deployment](#live).
-
 If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
 
-Or if you want neither, check out [this awesome demo video](#video) I made.
-
-### Live Streamlit App Deployment <a id = 'live'></a>
+Or, check out [this awesome demo video](#video) I made.
 
 ### Local Deployment <a id = 'local'></a>
+
+**Step 1**: Clone this repository
+```bash
+git clone https://github.com/husnazainurin/energy-forecasting.git
+cd energy-forecasting
+```
+
+**Step 2**: Create and activate virtual environment
+
+*Windows*
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+*macOS/Linux*
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+**Step 3**: Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+**Step 4**: Launch Streamlit application
+```bash
+streamlit run src/app.py
+```
 
 ### Demo Video <a id = 'video'></a>
 
 ## Future Update
-Currently, I only compared XGBoost Regressor and ARIMAX model. I do plan on including neural network model (specifically CNN) for the comparison and will replace the ARIMAX model if it perform better.
+This project have lots of improvement that is still within my capability, if I have extra time. My near-future plan is to:
+* Include CNN in the model comparison, and switch the deployed model if it performs better than the ARIMAX model
+* Improve hyperparameter tuning for a more comprehensive experimentation
+
+## Connect with the Author <a id = 'connect'></a>
+If you like what I do, feel free to reach out to me via (*yes, the icon is clickable!!*) :
+<div>
+  <a href = 'www.linkedin.com/in/husna-zainurin-204558389'>
+    <img width="48" height="48" src="https://github.com/user-attachments/assets/d3d48ae7-12ca-4e23-b746-c9fdc776540d"/>
+  </a>
+    <a href="mailto:h.zainurin@student.iium.edu.my">
+        <img src="https://skillicons.dev/icons?i=gmail" />
+      </a>
+</div>
 
 
 <img width=100% src="https://capsule-render.vercel.app/api?type=waving&color=f5b042&height=120&section=footer" alt="footer"/>
