@@ -121,7 +121,7 @@ I only include the achievements here. For my thought process and justifications 
 ## Deployment <a id = 'deploy'></a>
 If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
 
-Or, check out [this awesome demo video](#video) I made.
+Or, if you only have a few seconds to spare, check out [this awesome demo video](#video) I made.
 
 ### Local Deployment <a id = 'local'></a>
 
