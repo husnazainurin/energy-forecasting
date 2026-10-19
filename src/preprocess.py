@@ -1,7 +1,9 @@
 # Import relevant packages
 import pandas as pd
 import joblib
-from statsmodels.tsa.deterministic import Fourier
+import numpy as np
+from pathlib import Path
+
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -145,24 +147,25 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def arimax_preprocess(df: pd.DataFrame, encoder):
+def xgb_preprocess(df: pd.DataFrame, encoder) -> pd.DataFrame:
+    # Create copy to isolate preprocessing
+    X_xgb = df.copy()
 
-    df = df.copy()
+    # Specify target column to apply cyclical encoding
+    col = 'hour'
 
-    X = df.drop(columns = ['Appliances'])
-    y = df['Appliances']
+    # Apply both sine and cosine cyclical encoding
+    X_xgb[f"{col}_sin"] = np.sin(2 * np.pi * X_xgb[col] / 24 * 2)
+    X_xgb[f"{col}_cos"] = np.cos(2 * np.pi * X_xgb[col] / 24 * 2)
 
-    # Encode month
-    X['month'] = encoder.transform(X['month'])
+    # Drop the original raw column
+    X_xgb = X_xgb.drop(columns=[col])
 
-    # Convert returned numpy array into DataFrame (for compatibility)
-    X = pd.DataFrame(X)
+    # Encode month using the already fitted encoder passed from app.py
+    X_xgb['month'] = encoder.transform(X_xgb['month'])
 
-    # Apply Fourier transform
-    f = Fourier(period=48, order=3)
-    fourier_df = f.in_sample(y.index)
+    # Drop the target variable if it exists in the dataset (so the model can predict it)
+    if 'Appliances' in X_xgb.columns:
+        X_xgb = X_xgb.drop(columns=['Appliances'])
 
-    # Combine the Fourier terms with original data
-    X = pd.concat([X, fourier_df], axis=1)
-
-    return X, y
+    return X_xgb
