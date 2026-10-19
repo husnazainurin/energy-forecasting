@@ -79,10 +79,11 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         This method does the following feature engineering steps:
         1. Keep 'hour' as a predictive feature for the model, but discard the 'day'
         2. Downsample to 1 sample/30 min, aggregated by max
-        3. Create lagged appliances variable for 30-120 minutes (after downsampling), as well as 1, 5 and 7 days
-        4. Create short-term light lagged variables (30 - 60 minutes back)
-        5. Create 90-120 minutes Lagging for Bathroom Humidity
-        6. Drop resulting missing values caused by the shifting
+        3. Create a rolling statistics (mean, median, max, standard deviation) for Appliances with 2 hours and 24 hours window
+        4. Create lagged appliances variable for 30-120 minutes (after downsampling), as well as 1, 5 and 7 days
+        5. Create short-term light lagged variables (30 - 60 minutes back)
+        6. Create 90-120 minutes Lagging for Bathroom Humidity
+        7. Drop resulting missing values caused by the shifting
     
         Justifications and EDA are documented in:
         energy-forecasting/notebooks/02_eda.ipynb
@@ -96,6 +97,17 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     # Downsample to 1 sample/30 min, aggregated by max
     agg = {}
     numeric = df.select_dtypes('number').columns
+
+    # Create rolling statistics for 2 hours (4 steps) and 24 hours (48 steps)
+    window = [4, 48]
+    label = ['rolling_2h', 'rolling_2d']
+
+    for i in range(len(window)):
+        df[f'Appliances_{label[i]}_mean'] = df['Appliances'].rolling(window=window[i]).mean()
+        df[f'Appliances_{label[i]}_median'] = df['Appliances'].rolling(window=window[i]).median()
+        df[f'Appliances_{label[i]}_max'] = df['Appliances'].rolling(window=window[i]).max()
+        df[f'Appliances_{label[i]}_std'] = df['Appliances'].rolling(window=window[i]).std()
+
 
     # If numeric, take max. Else, take the first row values
     for col in df.columns:
