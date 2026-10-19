@@ -1,6 +1,6 @@
 <img width=100% src="https://capsule-render.vercel.app/api?type=waving&color=f5b042&height=120&section=header" alt="header"/> 
 <h1 align="center">⚡Energy Consumption Time-Series Forecasting With Conformal Prediction</h1>
-<h4 align="center">Status: <i>Deployment Ongoing</i></h4>
+<h4 align="center">Status: <i>Conformal Prediction Ongoing</i></h4>
 <h4 align="center">Expected Completion: <i>October 2026</i></h4>
 <hr>
 
@@ -17,7 +17,12 @@
 ---
 
 ## About this Project
-Predicting energy demand have been a crucial part of grid planning, which ensure that electricity supply are reliable while maintaining a minimum cost. This project applies a time-series analysis to forecast electricity consumption using historical records and forecasted sensor reading (from external API). 
+Predicting energy demand have been a crucial part of grid planning, which ensure that electricity supply are reliable while maintaining a minimum cost.
+
+This project develops an end-to-end, real-time electricity consumption forecasting system using machine learning and conformal prediction. 
+
+However, due to the limitation of not having live sensor and appliances reading, the final dashboard will only simulate real-time forecasting by providing the model with unseen data (testing set) row by row.
+
 
 Dataset Used: [UCI Appliances Energy Prediction](https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction)
 
@@ -87,7 +92,28 @@ I only include the achievements here. For my thought process and justifications 
                 Using the feature engineered dataset, I modeled and tune:<br><br>
                 1. XGBoost <br><br>
                 2. ARIMAX with Fourier terms<br><br>
-                <b>Results: </b> ARIMAX performs better with RMSE of ~94.5 Wh<br><br>
+                The test result is:
+                <table>
+                    <tr>
+                        <th>Model</th>
+                        <th>RMSE</th>
+                        <th>MAE</th>
+                        <th>R<sup>2</sup></th>
+                    </tr>
+                    <tr>
+                        <td>XGBoost</td>
+                        <td>57.13</td>
+                        <td>28.23</td>
+                        <td>0.79</td>
+                    </tr>
+                    <tr>
+                        <td>ARIMAX</td>
+                        <td>59.68</td>
+                        <td>31.10</td>
+                        <td>0.77</td>
+                    </tr>
+                </table>
+                This results in XGBoost being chosen as the deployed model.
             </td>
         </tr>
         <tr>
@@ -116,7 +142,15 @@ I only include the achievements here. For my thought process and justifications 
     </tbody>
 </table>
 
-
+## Project Structure
+```plaintext
+├── notebooks/          # Exploratory analysis and modeling
+├── src/                # Streamlit app and helper scripts
+├── models/             # My best trained model
+├── data/processed      # Test dataset I included for your testing
+├── requirements.txt    # Project dependencies
+└── README.md
+```
 
 ## Deployment <a id = 'deploy'></a>
 If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
@@ -158,8 +192,7 @@ streamlit run src/app.py
 
 ## Future Update
 This project have lots of improvement that is still within my capability, if I have extra time. My near-future plan is to:
-* Include CNN in the model comparison, and switch the deployed model if it performs better than the ARIMAX model
-* Improve hyperparameter tuning for a more comprehensive experimentation
+* Include CNN in the model comparison, and switch the deployed model if it performs better than the XGBoost model
 
 ## Connect with the Author <a id = 'connect'></a>
 If you like what I do, feel free to reach out to me via (*yes, the icon is clickable!!*) :
