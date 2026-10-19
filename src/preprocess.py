@@ -103,10 +103,10 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     label = ['rolling_2h', 'rolling_2d']
 
     for i in range(len(window)):
-        df[f'Appliances_{label[i]}_mean'] = df['Appliances'].rolling(window=window[i]).mean()
-        df[f'Appliances_{label[i]}_median'] = df['Appliances'].rolling(window=window[i]).median()
-        df[f'Appliances_{label[i]}_max'] = df['Appliances'].rolling(window=window[i]).max()
-        df[f'Appliances_{label[i]}_std'] = df['Appliances'].rolling(window=window[i]).std()
+        df[f'Appliances_{label[i]}_mean'] = (df['Appliances'].shift(1).rolling(window[i]).mean())
+        df[f'Appliances_{label[i]}_median'] = (df['Appliances'].shift(1).rolling(window[i]).median())
+        df[f'Appliances_{label[i]}_max'] = (df['Appliances'].shift(1).rolling(window[i]).max())
+        df[f'Appliances_{label[i]}_std'] = (df['Appliances'].shift(1).rolling(window[i]).std())
 
 
     # If numeric, take max. Else, take the first row values
