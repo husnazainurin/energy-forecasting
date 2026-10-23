@@ -1,8 +1,6 @@
 # Import relevant packages
 import pandas as pd
-import joblib
 import numpy as np
-from pathlib import Path
 
 
 def preprocess_energy(df: pd.DataFrame) -> pd.DataFrame:

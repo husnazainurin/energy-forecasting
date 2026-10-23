@@ -1,11 +1,9 @@
 import streamlit as st
 from pathlib import Path
 import joblib
-import numpy as np
 import pandas as pd
 import sys
 import time
-from interval_prediction import get_conformal_prediction
 
 # Page configuration
 st.set_page_config(page_title="Live Energy Forecast", page_icon="⚡", layout="wide")
@@ -15,7 +13,9 @@ root_dir = Path(__file__).resolve().parent.parent
 if str(root_dir) not in sys.path:
     sys.path.append(str(root_dir))
 
+# Our wrapper methods
 from src.preprocess import preprocess_energy, feature_engineering, xgb_preprocess
+from interval_prediction import get_conformal_prediction
 
 # Default value if no saved index session state is present
 if "current_index" not in st.session_state:
