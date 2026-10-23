@@ -8,6 +8,12 @@
 
 ### Language Used: <a href="https://skillicons.dev"><img src="https://skillicons.dev/icons?i=py" /></a>
 
+## 🏆 Key Results
+* XGBoost model results in ~57.1Wh RMSE and 0.79 R<sup>2</sup> (explained variance) score.
+* Adaptive conformal prediction covers 95% of the test data accurately with tight average margin of ~95.6Wh. The miscoverage mainly concentrates on sudden peak shifts.
+* Implemented the model in an interactive dashboard in Streamlit Community Cloud (*Ongoing*). For now you can deploy locally only. I included guide to deploy [here](#deploy).
+* The dashboard will simulate real-time forecasting by feeding the test set into the model row-by-row. You can adjust forecast horizon and playback speed using a slider.
+
 ## 📚 Table of Contents
 * [Summary of Achievements](#summary-of-achievements)
 * [Deployment](#deploy)
@@ -119,11 +125,11 @@ I only include the achievements here. For my thought process and justifications 
         <tr>
             <td><a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/04_conformal_prediction_analysis.ipynb'>Conformal Prediction</a></td>
             <td>
-                adaptive-conformal-inference
+                MAPIE
             </td>
             <td>
                 1. Applied and test adaptive conformal prediction on the selected model.<br><br>
-                2. Create a wrapper method for the dashboard implementation.
+                2. Achieved 95% coverage on test set, with miscoverage only concentrating around sudden peak shifts. In stable period, the interval remains tight and accurate.
             </td>
         </tr>
         <tr>
@@ -155,7 +161,7 @@ I only include the achievements here. For my thought process and justifications 
 ## Deployment <a id = 'deploy'></a>
 If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
 
-Or, if you only have a few seconds to spare, check out [this awesome demo video](#video) I made.
+Or, if you only have a few seconds to spare, I do plan on deploying the dashboard in Streamlit Community Cloud, but this will be done right after I'm satisfied with my current work. **Expected in late October/early November.**
 
 ### Local Deployment <a id = 'local'></a>
 
@@ -188,7 +194,6 @@ pip install -r requirements.txt
 streamlit run src/app.py
 ```
 
-### Demo Video <a id = 'video'></a>
 
 ## Future Update
 This project have lots of improvement that is still within my capability, if I have extra time. My near-future plan is to:
@@ -197,12 +202,9 @@ This project have lots of improvement that is still within my capability, if I h
 ## Connect with the Author <a id = 'connect'></a>
 If you like what I do, feel free to reach out to me via (*yes, the icon is clickable!!*) :
 <div>
-  <a href = 'www.linkedin.com/in/husna-zainurin-204558389'>
+  <a href = 'https://www.linkedin.com/in/husna-zainurin-204558389'>
     <img width="48" height="48" src="https://github.com/user-attachments/assets/d3d48ae7-12ca-4e23-b746-c9fdc776540d"/>
   </a>
-    <a href="mailto:h.zainurin@student.iium.edu.my">
-        <img src="https://skillicons.dev/icons?i=gmail" />
-      </a>
 </div>
 
 
