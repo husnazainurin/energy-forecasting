@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import sys
 import time
+from interval_prediction import get_conformal_prediction
 
 # Page configuration
 st.set_page_config(page_title="Live Energy Forecast", page_icon="⚡", layout="wide")
@@ -67,23 +68,30 @@ def show_sensor_readings(row):
             col.metric(f"{ROOMS[n]} Temp", f"{row[f'T{n}']:.1f} °C")
             col.metric(f"{ROOMS[n]} Humidity", f"{row[f'RH_{n}']:.1f} %")
 
-def show_prediction(prediction, horizon):
-    '''Show the forecast using clean metric blocks'''
+def show_prediction(lower_bounds, upper_bounds, horizon):
+    '''Show the forecast using clean metric blocks with conformal intervals'''
     st.markdown("### 📈 Energy Consumption Forecast")
     
-    values = np.asarray(prediction).ravel()
-    
     st.markdown("#### Forecast Breakdown")
-    # Dynamically create columns based on the number of prediction steps
-    cols = st.columns(len(values))
-    for i, (col, value) in enumerate(zip(cols, values)):
-        minutes = (i + 1) * 30
-        col.metric(f"In {minutes} min", f"{value:.1f} Wh")
+    
+    # Extract the final prediction matching the target horizon
+    final_lower = lower_bounds[-1]
+    final_upper = upper_bounds[-1]
+    
+    # Display as a single metric
+    st.metric(f"In {horizon} min", f"{final_lower:.2f}Wh - {final_upper:.2f}Wh")
 
 # Load data
 model, encoder = load_model()
 test_set = load_data("test_set.csv")
 cal_set = load_data("cal_set.csv")
+
+# Preprocess calibration set for Conformal Prediction
+cal_processed_df = preprocess_energy(cal_set.copy())
+cal_processed_df = feature_engineering(cal_processed_df)
+X_cal = xgb_preprocess(cal_processed_df, encoder)
+y_cal = cal_processed_df['Appliances']
+
 
 # Set title
 st.title("⚡ Live Energy Forecasting Dashboard")
@@ -158,13 +166,14 @@ for i in range(st.session_state.current_index, len(test_set)):
     # Get sensor forecast from API
     api_processed = sensor_forecast.tail(available_periods)
 
-    # Make prediction
-    prediction = model.predict(api_processed)
+    # Make prediction using the conformal prediction wrapper
+    y_pred, lower_bounds, upper_bounds = get_conformal_prediction(model, X_cal, y_cal, api_processed)
 
     # Update Predictions (Left Column)
     with prediction_placeholder.container():
-        show_prediction(prediction, available_periods * 30)
+        show_prediction(lower_bounds, upper_bounds, available_periods * 30)
 
     time.sleep(speed)
 
+# Reset session state
 st.session_state.current_index = 0
