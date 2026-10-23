@@ -1,7 +1,6 @@
 <img width=100% src="https://capsule-render.vercel.app/api?type=waving&color=f5b042&height=120&section=header" alt="header"/> 
 <h1 align="center">⚡Energy Consumption Time-Series Forecasting With Conformal Prediction</h1>
-<h4 align="center">Status: <i>Conformal Prediction Ongoing</i></h4>
-<h4 align="center">Expected Completion: <i>October 2026</i></h4>
+<h4 align="center">Status: <i>Completed (V1)</i></h4>
 <hr>
 
 ### NOTE: This README will summarize the whole pipeline. If you only want to see the final working product, jump to [Deployment](#deploy).
@@ -11,8 +10,9 @@
 ## 🏆 Key Results
 * XGBoost model results in ~57.1Wh RMSE and 0.79 R<sup>2</sup> (explained variance) score.
 * Adaptive conformal prediction covers 95% of the test data accurately with tight average margin of ~95.6Wh. The miscoverage mainly concentrates on sudden peak shifts.
-* Implemented the model in an interactive dashboard in Streamlit Community Cloud (*Ongoing*). For now you can deploy locally only. I included guide to deploy [here](#deploy).
-* The dashboard will simulate real-time forecasting by feeding the test set into the model row-by-row. You can adjust forecast horizon and playback speed using a slider.
+* Implemented the model in an interactive dashboard in Streamlit Community Cloud. See the dashboard <a href = 'https://energy-forecasting-uci.streamlit.app/'>here</a>. For local deployment, I included a guide to clone this repository [here](#deploy).
+  
+    **DISCLAIMER: As I do not have access to live sensor and energy consumption reading, for now, I can only *simulate* real-time predictions by feeding unseen data to the model row-by-row sequentially. Otherwise, when necessary live readings is available, this dashboard is built for real-time preprocessing and prediction.**
 
 ## 📚 Table of Contents
 * [Summary of Achievements](#summary-of-achievements)
@@ -31,6 +31,16 @@ However, due to the limitation of not having live sensor and appliances reading,
 
 
 Dataset Used: [UCI Appliances Energy Prediction](https://archive.ics.uci.edu/dataset/374/appliances+energy+prediction)
+
+## Project Structure
+```plaintext
+├── notebooks/          # Exploratory analysis and modeling
+├── src/                # Streamlit app and helper scripts
+├── models/             # My best trained model
+├── data/processed      # Test dataset I included for your testing
+├── requirements.txt    # Project dependencies
+└── README.md
+```
 
 ## Summary of Achievements
 Here, I summarized the achievements I accomplished in several data science processes throughout the pipeline.
@@ -129,7 +139,9 @@ I only include the achievements here. For my thought process and justifications 
             </td>
             <td>
                 1. Applied and test adaptive conformal prediction on the selected model.<br><br>
-                2. Achieved 95% coverage on test set, with miscoverage only concentrating around sudden peak shifts. In stable period, the interval remains tight and accurate.
+                2. Achieved an overall 95% coverage on test set. In stable period, the accuracy may get up to 100% local coverage, with tight margin (averaging ~95.6Wh)<br><br>
+                3. In the event of sudden peak shifts, the local coverage may drop to 88% at worst. This can be improved, but will result in looser margin.<br><br>
+                3. For visualization of the conformal prediction performance, please view <a href = 'https://github.com/husnazainurin/energy-forecasting/blob/main/notebooks/04_conformal_prediction_analysis.ipynb'>this notebook</a>.
             </td>
         </tr>
         <tr>
@@ -142,26 +154,19 @@ I only include the achievements here. For my thought process and justifications 
                 And the dashboard will display:<br><br>
                1. Current time: current time, based on the current row being iterated in the test set<br><br>
                2. Current sensor reading: sensor reading fetch from live sensor<br><br>
-               3. Predicted value: electrical consumption predicted at forecast horizon
+               3. Predicted value interval: electrical consumption interval predicted at forecast horizon
             </td>
         </tr>
     </tbody>
 </table>
 
-## Project Structure
-```plaintext
-├── notebooks/          # Exploratory analysis and modeling
-├── src/                # Streamlit app and helper scripts
-├── models/             # My best trained model
-├── data/processed      # Test dataset I included for your testing
-├── requirements.txt    # Project dependencies
-└── README.md
-```
 
 ## Deployment <a id = 'deploy'></a>
-If you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
 
-Or, if you only have a few seconds to spare, I do plan on deploying the dashboard in Streamlit Community Cloud, but this will be done right after I'm satisfied with my current work. **Expected in late October/early November.**
+If you only have a few seconds to spare, checkout my <a href = 'https://energy-forecasting-uci.streamlit.app/'>Streamlit Community Cloud</a> deployment.
+
+But if you want to view detailed codes, notebooks and techniques used, use [Local Deployment](#local).
+
 
 ### Local Deployment <a id = 'local'></a>
 
