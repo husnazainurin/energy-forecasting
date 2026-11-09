@@ -3,11 +3,17 @@ from pathlib import Path
 import joblib
 import pandas as pd
 import sys
-import time
 import plotly.graph_objects as go
 
+# ---------------------------------------------------------------------------
 # Page configuration
-st.set_page_config(page_title="Live Energy Forecast", page_icon="⚡", layout="wide")
+# ---------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Live Energy Forecast",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 # Add the root directory to Python's path
 root_dir = Path(__file__).resolve().parent.parent
@@ -18,29 +24,131 @@ if str(root_dir) not in sys.path:
 from src.preprocess import preprocess_energy, feature_engineering, xgb_preprocess
 from interval_prediction import get_conformal_prediction
 
-# Default value if no saved index session state is present
-if "current_index" not in st.session_state:
-    st.session_state.current_index = 0
+# ---------------------------------------------------------------------------
+# Styling
+# ---------------------------------------------------------------------------
+ACCENT = "#0D9488"          # forecast / interval
+ACTUAL = "#475569"          # observed data
+ACCENT_FILL = "rgba(13, 148, 136, 0.16)"
 
-if "actual_history" not in st.session_state:
-    st.session_state.actual_history = {}
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-if "prediction_history" not in st.session_state:
-    st.session_state.prediction_history = {}
+    html, body, [class*="css"], .stApp {
+        font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    }
 
-if "lower_history" not in st.session_state:
-    st.session_state.lower_history = {}
+    /* Keep the header (it holds the sidebar open/close arrow) but make it blend in */
+    header[data-testid="stHeader"] { background: transparent; }
+    [data-testid="stAppDeployButton"] { display: none; }
+    footer { visibility: hidden; }
 
-if "upper_history" not in st.session_state:
-    st.session_state.upper_history = {}
+    .block-container { padding-top: 3rem; padding-bottom: 2rem; max-width: 1400px; }
 
-# Define room
+    /* Page header */
+    .page-title { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+    .page-sub   { font-size: 0.95rem; opacity: 0.65; margin: 0.25rem 0 1.25rem 0; }
+
+    /* Summary cards */
+    .kpi {
+        border: 1px solid rgba(128, 128, 128, 0.22);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        height: 100%;
+        background: rgba(128, 128, 128, 0.04);
+    }
+    .kpi-label { font-size: 0.8rem; font-weight: 500; opacity: 0.65; margin-bottom: 0.35rem; }
+    .kpi-value { font-size: 1.6rem; font-weight: 650; letter-spacing: -0.01em; line-height: 1.2; }
+    .kpi-unit  { font-size: 0.9rem; font-weight: 500; opacity: 0.6; margin-left: 0.2rem; }
+    .kpi-note  { font-size: 0.8rem; opacity: 0.6; margin-top: 0.3rem; }
+    .kpi-value.accent { color: #0D9488; }
+    .kpi-date  { font-size: 1.05rem; font-weight: 600; line-height: 1.35; }
+
+    /* Section headings */
+    .section-title { font-size: 1.05rem; font-weight: 600; margin: 0 0 0.15rem 0; }
+    .section-sub   { font-size: 0.85rem; opacity: 0.6; margin: 0 0 0.75rem 0; }
+
+    /* Sensor table */
+    table.sensors { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    table.sensors th {
+        text-align: left; font-weight: 500; font-size: 0.8rem; opacity: 0.6;
+        padding: 0.5rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.25);
+    }
+    table.sensors td {
+        padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.12);
+        font-variant-numeric: tabular-nums;
+    }
+    table.sensors th.num, table.sensors td.num { text-align: right; }
+    table.sensors tr:last-child td { border-bottom: none; }
+
+    /* Forecast range bar */
+    .range-bar {
+        position: relative; height: 8px; border-radius: 4px;
+        background: rgba(128,128,128,0.18); margin-top: 0.6rem;
+    }
+    .range-fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: #0D9488; }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] { border-right: 1px solid rgba(128,128,128,0.2); }
+
+    /* Status pill */
+    .pill {
+        display: inline-block; padding: 0.15rem 0.65rem; border-radius: 999px;
+        font-size: 0.78rem; font-weight: 500;
+    }
+    .pill.live   { background: rgba(13,148,136,0.14); color: #0D9488; }
+    .pill.paused { background: rgba(217,119,6,0.15);  color: #B45309; }
+    .pill.done   { background: rgba(128,128,128,0.18); }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
+# Constants and session state
+# ---------------------------------------------------------------------------
 ROOMS = {
     1: "Kitchen", 2: "Living room", 3: "Laundry room",
-    4: "Office room", 5: "Bathroom", 6: "Outside",
+    4: "Office", 5: "Bathroom", 6: "Outside",
     7: "Ironing room", 8: "Teenager room", 9: "Parents room",
 }
 
+DEFAULT_STATE = {
+    "current_index": 0,
+    "running": True,
+    "finished": False,
+    "actual_history": {},
+    "prediction_history": {},
+    "lower_history": {},
+    "upper_history": {},
+    "last_forecast": None,
+}
+for key, default in DEFAULT_STATE.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+
+def reset_simulation():
+    '''Clear all simulation state and start again'''
+    st.session_state.current_index = 0
+    st.session_state.running = True
+    st.session_state.finished = False
+    st.session_state.actual_history = {}
+    st.session_state.prediction_history = {}
+    st.session_state.lower_history = {}
+    st.session_state.upper_history = {}
+    st.session_state.last_forecast = None
+
+
+def toggle_running():
+    st.session_state.running = not st.session_state.running
+
+
+# ---------------------------------------------------------------------------
+# Loaders (cached so widget changes don't recompute them)
+# ---------------------------------------------------------------------------
 @st.cache_resource
 def load_model():
     '''This is the model and encoder loader'''
@@ -48,252 +156,208 @@ def load_model():
     ENCODER_PATH = root_dir / "models" / "month_encoder.pkl"
     return joblib.load(MODEL_PATH), joblib.load(ENCODER_PATH)
 
+
+@st.cache_data
 def load_data(name):
     '''This is the dataset loader'''
     return pd.read_csv(root_dir / "data" / "processed" / name)
 
+
+@st.cache_resource
+def prepare_calibration(_encoder):
+    '''Preprocess the calibration set once for Conformal Prediction'''
+    cal_raw = load_data("cal_set.csv")
+    cal_df = preprocess_energy(cal_raw.copy())
+    cal_df = feature_engineering(cal_df)
+    X_cal = xgb_preprocess(cal_df, _encoder)
+    y_cal = cal_df["Appliances"]
+    ref_max = float(y_cal.quantile(0.99))
+    return X_cal, y_cal, ref_max
+
+
+# ---------------------------------------------------------------------------
+# Rendering helpers
+# ---------------------------------------------------------------------------
 def format_date(value):
-    '''This method format the date in readable format'''
-    return pd.to_datetime(value).strftime("%A, %d %B %Y  ·  %I:%M %p")
+    '''Readable day and time strings'''
+    ts = pd.to_datetime(value)
+    return ts.strftime("%A, %d %B %Y"), ts.strftime("%I:%M %p")
 
-def show_sensor_readings(row):
-    '''Show sensor readings using native Streamlit metrics in a tight grid'''
-    # Group rooms into tabs for a cleaner UI
-    tab1, tab2, tab3 = st.tabs(["Common Areas", "Private Rooms", "Utility & Outside"])
 
-    with tab1:
-        cols = st.columns(3)
-        for col, n in zip(cols, [1, 2, 5]): # Kitchen, Living, Bath
-            col.metric(f"{ROOMS[n]} Temp", f"{row[f'T{n}']:.1f} °C")
-            col.metric(f"{ROOMS[n]} Humidity", f"{row[f'RH_{n}']:.1f} %")
+def kpi_card(label, value, unit="", note="", accent=False):
+    cls = "kpi-value accent" if accent else "kpi-value"
+    unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
+    note_html = f'<div class="kpi-note">{note}</div>' if note else ""
+    return (
+        f'<div class="kpi"><div class="kpi-label">{label}</div>'
+        f'<div class="{cls}">{value}{unit_html}</div>{note_html}</div>'
+    )
 
-    with tab2:
-        cols = st.columns(3)
-        for col, n in zip(cols, [4, 8, 9]): # Office, Teen, Parents
-            col.metric(f"{ROOMS[n]} Temp", f"{row[f'T{n}']:.1f} °C")
-            col.metric(f"{ROOMS[n]} Humidity", f"{row[f'RH_{n}']:.1f} %")
 
-    with tab3:
-        cols = st.columns(3)
-        for col, n in zip(cols, [3, 7, 6]): # Laundry, Ironing, Outside
-            col.metric(f"{ROOMS[n]} Temp", f"{row[f'T{n}']:.1f} °C")
-            col.metric(f"{ROOMS[n]} Humidity", f"{row[f'RH_{n}']:.1f} %")
+def render_sensor_table(row):
+    rows = ""
+    for n, name in ROOMS.items():
+        rows += (
+            f"<tr><td>{name}</td>"
+            f"<td class='num'>{row[f'T{n}']:.1f} °C</td>"
+            f"<td class='num'>{row[f'RH_{n}']:.1f} %</td></tr>"
+        )
+    return (
+        "<table class='sensors'><thead><tr>"
+        "<th>Room</th><th class='num'>Temperature</th><th class='num'>Humidity</th>"
+        f"</tr></thead><tbody>{rows}</tbody></table>"
+    )
 
-def show_prediction(lower_bounds, upper_bounds, horizon):
-    '''Show the forecast using clean metric blocks with conformal intervals'''
-    # Extract the final prediction matching the target horizon
-    final_lower = lower_bounds[-1]
-    final_upper = upper_bounds[-1]
 
-    # Display as a single metric
-    st.metric(f"In {horizon} min", f"{final_lower:.2f}Wh - {final_upper:.2f}Wh")
+def render_forecast_card(forecast, ref_max):
+    low, high = forecast["low"], forecast["high"]
+    mid = (low + high) / 2
+    scale = max(ref_max, high, 1.0)
+    left = max(0.0, low / scale * 100)
+    width = max(2.0, (high - low) / scale * 100)
+    return (
+        f'<div class="kpi">'
+        f'<div class="kpi-label">Expected range in {forecast["minutes"]} min (95% interval)</div>'
+        f'<div class="kpi-value accent">{low:.0f} – {high:.0f}<span class="kpi-unit">Wh</span></div>'
+        f'<div class="range-bar"><div class="range-fill" '
+        f'style="left:{left:.1f}%; width:{width:.1f}%;"></div></div>'
+        f'<div class="kpi-note">Midpoint {mid:.0f} Wh · width {high - low:.0f} Wh</div>'
+        f'</div>'
+    )
 
-def get_time_series_chart():
-    '''Returns the Plotly figure for actual and predicted energy consumption'''
-    actual_history = st.session_state.actual_history
-    prediction_history = st.session_state.prediction_history
-    lower_history = st.session_state.lower_history
-    upper_history = st.session_state.upper_history
 
-    if not actual_history and not prediction_history:
-        return None
-
-    actual_series = pd.Series(actual_history, dtype="float64")
-    prediction_series = pd.Series(prediction_history, dtype="float64")
-    lower_series = pd.Series(lower_history, dtype="float64")
-    upper_series = pd.Series(upper_history, dtype="float64")
-
-    actual_series.index = pd.to_datetime(actual_series.index)
-    prediction_series.index = pd.to_datetime(prediction_series.index)
-    lower_series.index = pd.to_datetime(lower_series.index)
-    upper_series.index = pd.to_datetime(upper_series.index)
+def build_chart(window_points=150):
+    '''Plotly figure: actual vs predicted consumption with the conformal band'''
+    def to_series(d, name):
+        s = pd.Series(d, dtype="float64")
+        s.index = pd.to_datetime(s.index)
+        return s.rename(name)
 
     chart_df = pd.concat(
         [
-            actual_series.rename("Actual"),
-            prediction_series.rename("Predicted"),
-            lower_series.rename("Lower Bound"),
-            upper_series.rename("Upper Bound"),
+            to_series(st.session_state.actual_history, "Actual"),
+            to_series(st.session_state.prediction_history, "Predicted"),
+            to_series(st.session_state.lower_history, "Lower"),
+            to_series(st.session_state.upper_history, "Upper"),
         ],
         axis=1,
-    ).sort_index()
+    ).sort_index().tail(window_points)
 
     fig = go.Figure()
 
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=chart_df["Actual"],
-            mode="lines",
-            name="Actual",
-            connectgaps=False,
-            hovertemplate="Time: %{x}<br>Actual: %{y:.2f} Wh<extra></extra>",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=chart_df["Predicted"],
-            mode="lines",
-            name="Predicted",
-            connectgaps=False,
-            hovertemplate="Time: %{x}<br>Predicted: %{y:.2f} Wh<extra></extra>",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=chart_df["Lower Bound"],
-            mode="lines",
-            line=dict(width=0),
-            showlegend=False,
-            connectgaps=False,
-            hoverinfo="skip",
-        )
-    )
-
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=chart_df["Upper Bound"],
-            mode="lines",
-            line=dict(width=0),
-            fill="tonexty",
-            fillcolor="rgba(31, 119, 180, 0.20)",
-            name="Conformal Prediction",
-            connectgaps=False,
-            hovertemplate="Time: %{x}<br>Upper Bound: %{y:.2f} Wh<extra></extra>",
-        )
-    )
+    fig.add_trace(go.Scatter(
+        x=chart_df.index, y=chart_df["Lower"], mode="lines",
+        line=dict(width=0), showlegend=False, hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=chart_df.index, y=chart_df["Upper"], mode="lines",
+        line=dict(width=0), fill="tonexty", fillcolor=ACCENT_FILL,
+        name="95% interval", hoverinfo="skip",
+    ))
+    fig.add_trace(go.Scatter(
+        x=chart_df.index, y=chart_df["Actual"], mode="lines",
+        name="Actual", line=dict(color=ACTUAL, width=2),
+        hovertemplate="Actual: %{y:.1f} Wh<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=chart_df.index, y=chart_df["Predicted"], mode="lines",
+        name="Predicted", line=dict(color=ACCENT, width=2, dash="dot"),
+        hovertemplate="Predicted: %{y:.1f} Wh<extra></extra>",
+    ))
 
     fig.update_layout(
-        xaxis_title="Time",
-        yaxis_title="Energy Consumption (Wh)",
-        height=450,
+        height=420,
         hovermode="x unified",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="left",
-            x=0,
-        ),
-        margin=dict(l=20, r=20, t=50, b=20),
+        uirevision="live-chart",          # keep zoom/pan state between updates
+        transition=dict(duration=0),      # no animation between frames
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter, sans-serif", size=12),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        margin=dict(l=10, r=10, t=30, b=10),
+        yaxis_title="Energy (Wh)",
+        xaxis_title=None,
     )
-
-    fig.update_xaxes(showgrid=True)
-    fig.update_yaxes(showgrid=True)
-
+    fig.update_xaxes(showgrid=False, showline=True, linecolor="rgba(128,128,128,0.3)")
+    fig.update_yaxes(
+        showgrid=True, gridcolor="rgba(128,128,128,0.15)",
+        zeroline=False, rangemode="tozero",
+    )
     return fig
 
-# Load data
+
+# ---------------------------------------------------------------------------
+# Load data and calibrate
+# ---------------------------------------------------------------------------
 model, encoder = load_model()
 test_set = load_data("test_set.csv")
 cal_set = load_data("cal_set.csv")
+X_cal, y_cal, REF_MAX = prepare_calibration(encoder)
 
-# Preprocess calibration set for Conformal Prediction
-cal_processed_df = preprocess_energy(cal_set.copy())
-cal_processed_df = feature_engineering(cal_processed_df)
-X_cal = xgb_preprocess(cal_processed_df, encoder)
-y_cal = cal_processed_df['Appliances']
-
-# Set title
-st.title("⚡ Live Energy Forecasting Dashboard")
-
-# Render static title outside the placeholder to prevent layout flickering
-st.markdown("### 📊 Actual vs Predicted Energy Consumption")
-chart_placeholder = st.empty()
-
-initial_fig = get_time_series_chart()
-if initial_fig is not None:
-    chart_placeholder.plotly_chart(initial_fig, use_container_width=True)
-else:
-    chart_placeholder.info("The time-series graph will appear when the simulation starts.")
-
-# Slider to select playback speed and forecast horizon
-st.markdown("### ⚙️ Simulation Settings")
-col_speed, col_horizon = st.columns(2)
-
-with col_speed:
+# ---------------------------------------------------------------------------
+# Sidebar: settings
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.markdown("### Simulation")
     speed = st.select_slider(
-        "Playback speed (seconds per 10 mins)",
-        options=[0.05, 0.1, 0.25, 0.5, 1, 2, 3, 5],
-        value=0.05,
-        format_func=lambda s: f"{s}s",
+        "Playback speed",
+        options=[5, 3, 2, 1, 0.5, 0.25],
+        value=0.5,
+        format_func=lambda s: f"{s}s per step",
+        help="Real-time seconds between 10-minute readings. Lower is faster.",
+    )
+    horizon = st.select_slider(
+        "Forecast horizon",
+        options=[30, 60, 90, 120],
+        value=30,
+        format_func=lambda m: f"{m} min",
     )
 
-with col_horizon:
-    horizon = st.slider(
-        "Forecast horizon (minutes)",
-        min_value=30,
-        max_value=120,
-        step=30,
+    st.divider()
+    st.button("Restart simulation", on_click=reset_simulation, use_container_width=True)
+    st.caption(
+        "Forecasts use an XGBoost model with split conformal prediction "
+        "to give a 95% interval around each estimate."
     )
 
-st.divider()
-
-# Top level metrics container
-top_col1, top_col2 = st.columns([2, 1])
-today_placeholder = top_col1.empty()
-lights_placeholder = top_col2.empty()
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Main dashboard layout (Left side: Predictions, Right side: Sensors)
-main_col1, main_col2 = st.columns([1.2, 1])
-
-# Create static headers outside placeholders
-with main_col1:
-    st.markdown("### 📈 Energy Consumption Forecast")
-    st.markdown("#### Forecast Breakdown")
-    prediction_placeholder = st.empty()
-
-with main_col2:
-    st.markdown("### 🏠 Live Home Sensor Readings")
-    row_placeholder = st.empty()
-
-# Simulation loop
-history_raw = cal_set.copy()
-
-if st.session_state.current_index > 0:
-    history_raw = pd.concat(
-        [history_raw, test_set.iloc[:st.session_state.current_index]]
+# ---------------------------------------------------------------------------
+# Page header with always-visible playback control
+# ---------------------------------------------------------------------------
+head_left, head_right = st.columns([4, 1])
+with head_left:
+    st.markdown('<p class="page-title">Live energy forecast</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-sub">Appliance consumption, forecast with calibrated '
+        'uncertainty from live home sensor data.</p>',
+        unsafe_allow_html=True,
     )
+with head_right:
+    if st.session_state.finished:
+        st.button("Restart", on_click=reset_simulation, use_container_width=True, type="primary")
+    elif st.session_state.running:
+        st.button("Pause", on_click=toggle_running, use_container_width=True)
+    else:
+        st.button("Resume", on_click=toggle_running, use_container_width=True, type="primary")
 
-for i in range(st.session_state.current_index, len(test_set)):
+# ---------------------------------------------------------------------------
+# One simulation step
+# ---------------------------------------------------------------------------
+def advance_one_step():
+    '''Run the model for the next reading and store results in session state'''
+    i = st.session_state.current_index
 
-    # Calculate period (steps)
-    period = int(horizon / 30)
-
-    # Stop running if simulation ended (ran out of test row)
-    available_periods = min(period, len(test_set) - i - 1)
+    available_periods = min(int(horizon / 30), len(test_set) - i - 1)
     if available_periods <= 0:
         st.session_state.current_index = len(test_set)
-        break
+        st.session_state.finished = True
+        st.session_state.running = False
+        return True  # just finished
 
-    # Append current reading to history
-    history_raw = pd.concat([history_raw, test_set.iloc[[i]]])
+    # History up to and including the current reading
+    history_raw = pd.concat([cal_set, test_set.iloc[:i + 1]])
     current_row = history_raw.iloc[-1]
-
-    current_date = pd.to_datetime(current_row["date"])
-    current_date_key = current_date.isoformat()
-
-    st.session_state.actual_history[current_date_key] = float(
-        current_row["Appliances"]
-    )
-
-    # Update top metrics directly without clearing a container block
-    today_placeholder.subheader(f"🕒 {format_date(current_row['date'])}")
-    lights_placeholder.metric(
-        "💡 Current Lights Usage",
-        f"{current_row['lights']:.0f} Wh",
-    )
-
-    # Update Sensors (Right Column)
-    with row_placeholder.container():
-        show_sensor_readings(current_row)
+    current_key = pd.to_datetime(current_row["date"]).isoformat()
+    st.session_state.actual_history[current_key] = float(current_row["Appliances"])
 
     # Real-time preprocessing
     sensor_forecast = pd.concat(
@@ -302,18 +366,12 @@ for i in range(st.session_state.current_index, len(test_set)):
     sensor_forecast = preprocess_energy(sensor_forecast)
     sensor_forecast = feature_engineering(sensor_forecast)
     sensor_forecast = xgb_preprocess(sensor_forecast, encoder)
-
-    # Get sensor forecast from API
     api_processed = sensor_forecast.tail(available_periods)
 
-    # Make prediction using the conformal prediction wrapper
+    # Conformal prediction
     y_pred, lower_bounds, upper_bounds = get_conformal_prediction(
-        model,
-        X_cal,
-        y_cal,
-        api_processed,
+        model, X_cal, y_cal, api_processed,
     )
-
     y_pred = pd.Series(y_pred).to_numpy().flatten()
     lower_bounds = pd.Series(lower_bounds).to_numpy().flatten()
     upper_bounds = pd.Series(upper_bounds).to_numpy().flatten()
@@ -322,36 +380,99 @@ for i in range(st.session_state.current_index, len(test_set)):
         test_set.iloc[i + 1:i + 1 + available_periods]["date"]
     ).tolist()
 
-    if not (
-        len(y_pred) == len(lower_bounds) == len(upper_bounds) == len(forecast_dates)
-    ):
+    if not (len(y_pred) == len(lower_bounds) == len(upper_bounds) == len(forecast_dates)):
         raise ValueError(
             "The number of predictions, prediction bounds and forecast timestamps do not match."
         )
 
     for j, forecast_date in enumerate(forecast_dates):
-        forecast_date_key = pd.Timestamp(forecast_date).isoformat()
+        key = pd.Timestamp(forecast_date).isoformat()
+        st.session_state.prediction_history[key] = float(y_pred[j])
+        st.session_state.lower_history[key] = float(lower_bounds[j])
+        st.session_state.upper_history[key] = float(upper_bounds[j])
 
-        st.session_state.prediction_history[forecast_date_key] = float(y_pred[j])
-        st.session_state.lower_history[forecast_date_key] = float(lower_bounds[j])
-        st.session_state.upper_history[forecast_date_key] = float(upper_bounds[j])
+    st.session_state.last_forecast = {
+        "low": float(lower_bounds[-1]),
+        "high": float(upper_bounds[-1]),
+        "minutes": available_periods * 30,
+    }
+    st.session_state.current_index = i + 1
+    return False
 
-    # Fetch updated figure and overwrite chart_placeholder cleanly
-    updated_fig = get_time_series_chart()
-    if updated_fig is not None:
-        chart_placeholder.plotly_chart(updated_fig, use_container_width=True)
 
-    # Update Predictions (Left Column)
-    with prediction_placeholder.container():
-        show_prediction(
-            lower_bounds,
-            upper_bounds,
-            available_periods * 30,
+# ---------------------------------------------------------------------------
+# Live view: a fragment re-runs on its own timer, so only these elements are
+# updated (in place) instead of the whole page being redrawn.
+# ---------------------------------------------------------------------------
+run_every = speed if (st.session_state.running and not st.session_state.finished) else None
+
+
+@st.fragment(run_every=run_every)
+def live_view():
+    just_finished = False
+    if st.session_state.running and not st.session_state.finished:
+        just_finished = advance_one_step()
+
+    total = len(test_set)
+    idx = min(st.session_state.current_index, total)
+
+    # Status pill
+    if st.session_state.finished:
+        pill = '<span class="pill done">Simulation complete</span>'
+    elif st.session_state.running:
+        pill = '<span class="pill live">● Live</span>'
+    else:
+        pill = '<span class="pill paused">Paused</span>'
+    st.markdown(f'<div style="text-align:right; margin-bottom:0.5rem">{pill}</div>', unsafe_allow_html=True)
+
+    # Nothing to show yet
+    if idx == 0:
+        st.info("The dashboard will fill in as soon as the simulation starts.")
+        return
+
+    current_row = test_set.iloc[idx - 1]
+
+    # Summary cards
+    c1, c2, c3, c4 = st.columns(4)
+    day_str, time_str = format_date(current_row["date"])
+    c1.markdown(
+        f'<div class="kpi"><div class="kpi-label">Current time</div>'
+        f'<div class="kpi-date">{time_str}</div>'
+        f'<div class="kpi-note">{day_str}</div></div>',
+        unsafe_allow_html=True,
+    )
+    c2.markdown(kpi_card("Appliances now", f"{current_row['Appliances']:.0f}", "Wh"), unsafe_allow_html=True)
+    c3.markdown(kpi_card("Lights now", f"{current_row['lights']:.0f}", "Wh"), unsafe_allow_html=True)
+    if st.session_state.last_forecast:
+        c4.markdown(render_forecast_card(st.session_state.last_forecast, REF_MAX), unsafe_allow_html=True)
+
+    # Progress
+    progress = min(idx / total, 1.0)
+    st.progress(progress, text=f"{progress * 100:.0f}% complete ({idx:,} of {total:,} readings)")
+
+    # Chart
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Actual vs predicted consumption</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="section-sub">Most recent readings, with the 95% prediction interval shaded.</p>',
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(
+            build_chart(),
+            use_container_width=True,
+            key="energy_chart",
+            config={"displayModeBar": False},
         )
 
-    st.session_state.current_index = i + 1
+    # Sensors
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Home sensors</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-sub">Latest temperature and humidity by room.</p>', unsafe_allow_html=True)
+        st.markdown(render_sensor_table(current_row), unsafe_allow_html=True)
 
-    time.sleep(speed)
+    # Switch off the timer by triggering one full rerun when the run ends
+    if just_finished:
+        st.rerun()
 
-if st.session_state.current_index >= len(test_set):
-    st.session_state.current_index = len(test_set)
+
+live_view()
